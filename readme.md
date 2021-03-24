@@ -41,6 +41,8 @@ Cada geo_index no redis ficlu com +- 5000 registros, permitindo que cada query g
 Foi criado alguns microserviços para dividir a carga e a responsabilidade da funcionalidade. 
 A versão do repositório é somente uma variação simplificada da solução original, que por sua vez utiliza uma base/complexidade muito menor.
 
-load_data.py - Serviço que irá popular um banco de dados com registros fictícios incluindo geolocalizações.  
-worker.py - Rotina Celery que mantém os dados do redis atualizados com delay de 5 minutos.
-web.py interface http para receber requests para ambas as abordagens ( redis / postgis )
+**load_data.py** - Serviço que irá popular um banco de dados com registros fictícios incluindo geolocalizações.  
+
+**worker.py** - Rotina Celery que mantém os dados do redis atualizados com delay de 5 minutos. 
+
+**web.py** - interface http para receber requests para ambas as abordagens ( redis / postgis )
