@@ -1,5 +1,5 @@
-###Resumo:
-Reescrever funcionalidade para calcular distancia entre lat/long utilizando REDIS (geospatial indexing) para milhões de registros.
+<h2>Resumo:</h2>
+<p>Reescrever funcionalidade para calcular distancia entre lat/long utilizando REDIS (geospatial indexing) para milhões de registros.</p>
 
 ###Problema: 
 O problema original que me foi enviado pelo meu cliente é sobre o exesso de memória gasto em uma determinada aplicação para
