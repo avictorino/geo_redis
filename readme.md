@@ -1,14 +1,17 @@
 <h2>Resumo:</h2>
 <p>Reescrever funcionalidade para calcular distancia entre lat/long utilizando REDIS (geospatial indexing) para milhões de registros.</p>
 
-###Problema: 
+<h3>Problema:</h3> 
+<p>
 O problema original que me foi enviado pelo meu cliente é sobre o exesso de memória gasto em uma determinada aplicação para
 calcular a distancia entre pontos ( latitudo / longitude ). No momento, a aplicação legada, 
 incialmente mal dimensionada no momento do desenvolvimento, trazia uma quantidade de dados significativa para a memória 
 para criar a estrutura de dados compatível com a funcionalidade.
+</p>
+<p>
 No momento que eu iniciei a minha analise ao problema estava sendo carregado 
 em memória algo em torno de >5mi < 10mi de registros em memória. 
-
+</p>
 Esse dados vinham de uma base analítica redshift, e claro, com milhões de linhas no baco de dados que 
 por sua vez recebia uma importação do RDS(XXG) MySql de produção com +-40gb através de uma task do airflow.
 
