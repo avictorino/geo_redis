@@ -56,7 +56,7 @@ I wrote some microservices to spread the responsibility for this functionality. 
 
 
 #### RUN
-docker-compose.yml
+  docker-compose up
 
 Will create an specific container for Redis and Postgis, then start to populate POSTGIS and copy fir tge redis get index.
 
