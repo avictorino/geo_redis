@@ -50,7 +50,7 @@ I wrote some microservices to spread the responsibility for this functionality. 
   
 ** load_data.py ** - Service that will populate a database with fictitious records with geolocations.
   
-** worker.py ** - Celery routine that keeps the Redis data up to date with a 5-minute delay.
+** task.py ** - Celery routine that keeps the Redis data up to date with a 5-minute delay.
   
 ** web.py ** - http interface to receive requests for both approaches (redis / postgis)
 
