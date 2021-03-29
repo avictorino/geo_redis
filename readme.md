@@ -1,48 +1,70 @@
+### Summary:
+Rewriting functionality to calculate lat / long distance, these coordinates were in an analytical database with 5mi records and it would not be prudent to let external requests execute this query.
 
-### Resumo:
-Reescrever funcionalidade para calcular distancia entre lat/long, essas coordenadas estavam em um banco de dados analítico com 5mi registros e não seria prudente deixar requests externos executar essa query.  
-#### Problema:   
-O problema reportado pelo meu cliente é o excesso de memória utilizado em uma determinada aplicação para calcular a distancia entre pontos geográficos. No momento, a aplicação legada, trazia uma quantidade de dados significativa para a memória para depois fazer uma operação de machine learning na estrutura. 
+#### Problem:
+The problem reported was the excess use of memory used in a given application to calculate the distance between geographical points. At the moment, the legacy application loads a significant amount of data to memory and later perform a find operation on the structure through a GIS library.
+  
+When I started to analyze the problem, it was being loaded into memory using somewhere around> 5mi & <10mi of records in memory, due to the rapid growth of the company in the last few months.
+  
+#### Emergency solution:
+My first approach was to do a geospatial query directly on the database and reduce the amount of data in memory, limiting it only by the closest distances, consequently letting the database deal with the heavy lifting. The system goes back to air on the same day.
 
-No momento que eu iniciei a analise ao problema estava sendo carregado em memória algo em torno de >5mi && <10mi de registros em memória, devido ao rápido crescimento da empresa nos ultimos meses. 
+    select 
+        profile_id, 
+        ST_MAKEPOINT({latitude}, {longitude}) as request_center, 
+        CAST (
+            ST_DISTANCESPHERE (
+                request_center,
+                ST_MAKEPOINT (p.latitude, p.longitude)
+                ) AS INTEGER
+            ) AS distance
+        from profiles as p
+        where distance <= '{radius_mts * 1000}'
+    order by distance;
+    ** simplified version for ilustrated propose
+  
+The actual query per second was +-5, it was better to have this flow in the database for a few weeks until the final solution was implemented/deployed.
 
-#### Solução emergencial:
-A minha primeira abordagem foi fazer uma query geospacial diretamente no redshift para reduzir a quantidade de dados em memória e restringindo somente pelas distâncias mais próximas, assim deixando o banco de dados fazer o trabalho pesado. Dessa forma o sistema volta a ao ar no mesmo dia.  
+Of course, the priority to move for a scalable solution increased as soon as I discovered that three other applications were doing the same load on memory, demanding more and more resources from the EC2s servers each one with 16GB.
+    
 
-Como o acesso era +-5 queries por segundo, a melhor ter esse fluxo no banco de dados por algumas semanas até que a solução definitiva implementada/implantada.   
-Claro que a prioridade aumentou assim que descobri que outras três aplicações faziam a mesma carga para memória exigindo cada vez mais recursos do banco de dados.
-   
-    select profile_id, ST_MAKEPOINT({latitude}, {longitude}) as request_center,  
-        CAST(  
-            ST_DISTANCESPHERE(  
-                request_center,   
-                ST_MAKEPOINT(p.latitude , p.longitude)  
-                ) AS INTEGER  
-            ) AS distance  
-        from profiles as p  
-        where distance <= '{radius_mts * 1000}'  
-        order by distance;  
+### Definitive solution
+Using REDIS with its geo index functionality, I stored all the coordinates already filtered by the main attribute, thus creating a structure in Redis with the following format:
 
-### Solução definitiva
-Utilizando REDIS com sua funcionalidade de geo index armazenei todas as coordenadas já filtradas pelo atributo principal, dessa forma criando uma estrutura no redis com o seguinte formato:
-developers:
-    developer_id: 1234
-    developer_id: 4345
-    developer_id: 6544
-    developer_id: 98
-python-developer:
-    developer_id: 1234
-    developer_id: 4345
-    developer_id: 8975
+    ##### / cpp-developers /
+     - developer_id: 1234
+     - developer_id: 4345
+     - developer_id: 6544
+     - developer_id: 98
+    ##### / python-developer /
+     - developer_id: 1234
+     - developer_id: 4345
+     - developer_id: 8975
 
-Cada geo_index no redis ficlu com +- 5000 registros, permitindo que cada query geospatial fosse executada em alguns milisegundos.
+  
+Each geo_index categorized in Redis maintains includes +- 5000 records, allowing each geospatial query to be executed in 100 milliseconds, faster than 1-second spends by the database, and mutch large scalable solution.
 
-#### Arquitetura do repositório:
-Foi criado alguns microserviços para dividir a carga e a responsabilidade da funcionalidade. 
-A versão do repositório é somente uma variação simplificada da solução original, que por sua vez utiliza uma base/complexidade muito menor.
+  
+#### Repository architecture:
+I wrote some microservices to spread the responsibility for this functionality. The repository version is just a simplified variation of the original solution, which uses a much larger databasebase/complexity.
+  
+** load_data.py ** - Service that will populate a database with fictitious records with geolocations.
+  
+** worker.py ** - Celery routine that keeps the Redis data up to date with a 5-minute delay.
+  
+** web.py ** - http interface to receive requests for both approaches (redis / postgis)
 
-**load_data.py** - Serviço que irá popular um banco de dados com registros fictícios incluindo geolocalizações.  
 
-**worker.py** - Rotina Celery que mantém os dados do redis atualizados com delay de 5 minutos. 
+#### RUN
+docker-compose.yml
 
-**web.py** - interface http para receber requests para ambas as abordagens ( redis / postgis )
+Will create an specific container for Redis and Postgis, then start to populate POSTGIS and copy fir tge redis get index.
+
+Have two different endpoints availables, with the same result, just to benchmark both solutions:
+
+##### POSTGIS Query
+http://127.0.0.1:5000/postgis_profiles/33.7207/-116.21677/100/km
+
+##### GEO REDIS Query
+http://127.0.0.1:5000/georedis_profiles/33.7207/-116.21677/100/km
+

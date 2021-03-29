@@ -1,0 +1,64 @@
+version: "3"
+
+services:
+
+  redis:
+    image: redis:alpine
+    ports:
+      - 6377:6379
+    restart: always
+    volumes:
+      - geo_redis_data:/data
+
+  postgis:
+    image: kartoza/postgis
+    ports:
+      - 5430:5432
+    restart: always
+    volumes:
+      - geo_postgres_data:/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123123
+      POSTGRES_DB: postgres
+
+  load_data:
+    build: ./
+    image: geo_redis_python
+    env_file:
+      - .env
+    command: python load_data.py
+    depends_on:
+      - postgis
+      - redis
+
+  worker:
+    build: ./
+    image: geo_redis_python
+    env_file:
+      - .env
+    command: celery -A task worker --loglevel=INFO --pool=solo
+    depends_on:
+      - load_data
+
+  scheduler:
+    build: ./
+    image: geo_redis_python
+    env_file:
+      - .env
+    command: celery -A worker beat --loglevel=ERROR
+    depends_on:
+      - worker
+
+  web:
+    build: ./
+    image: geo_redis_python
+    env_file:
+      - .env
+    command: gunicorn --bind 0.0.0.0:5000 app_config:flask_app
+    depends_on:
+      - scheduler
+
+volumes:
+  geo_redis_data:
+  geo_postgres_data:
