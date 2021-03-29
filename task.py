@@ -9,10 +9,10 @@ def build_redis_cache():
     if os.getenv("CLEAR_GEO_REDIS_BEFORE_INSERT", "1") == "1":
         redis_conn.delete(os.getenv("REDIS_GEOCACHE_NAME"))
 
-    logger.info(f"Fazendo query")
+    logger.info(f"quering database")
     profiles = session.query(ProfileModel).all()
 
-    logger.info(f"Copiando dados para o REDIS")
+    logger.info(f"Copy data to REDIS")
     for profile in profiles:
         redis_conn.geoadd(
             os.getenv("REDIS_GEOCACHE_NAME"),
@@ -21,14 +21,14 @@ def build_redis_cache():
             profile.to_json()
         )
 
-    logger.info(f"Foram adicionados {len(profiles)}")
+    logger.info(f"Added {len(profiles)}")
 
 
 @celery_app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
     """
-    Mantem o redis atualizado com novos registros do profile
-    Aprimeira execução é quando o sistema incializa, as demais a cada 5 minutos
+    Keeps the Redis updated with new profile records
+    The first execution is when the system starts, then, every 5 minutes
     """
     build_redis_cache.delay()
     sender.add_periodic_task(crontab(minute="*/5"), build_redis_cache.s())
