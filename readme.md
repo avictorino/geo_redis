@@ -58,9 +58,9 @@ I wrote some microservices to spread the responsibility for this functionality. 
 #### RUN
     $docker-compose up
 
-Will create an specific container for Redis and Postgis, then start to populate POSTGIS and copy fir tge redis get index.
+Will create a specific container for Redis and Postgis, then start to populate PostGIS and copy the Redis geoindex.
 
-Have two different endpoints availables, with the same result, just to benchmark both solutions:
+The web interface exposes two different endpoints, with the same result, just to compare both solutions:
 
 ##### POSTGIS Query
     http://127.0.0.1:5000/postgis_profiles/33.7207/-116.21677/100/km
