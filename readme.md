@@ -1,5 +1,5 @@
 ### Summary:
-Rewriting functionality to calculate lat / long distance, these coordinates were in an analytical database with 5mi records and it would not be prudent to let external requests execute this query.
+Rewriting functionality to calculate lat / long distance, these coordinates were in an analytical database with 5mi records and it would not be prudent let external requests execute this query.
 
 #### Problem:
 The problem reported was the excess use of memory used in a given application to calculate the distance between geographical points. At the moment, the legacy application loads a significant amount of data to memory and later perform a find operation on the structure through a GIS library.
